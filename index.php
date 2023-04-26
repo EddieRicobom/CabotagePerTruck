@@ -52,7 +52,6 @@ function processVolPerTruck($tVC,$listQtVolDefault,$listItemOrder){
 }
 
 function showDataProcessed($dataTruck){
-    var_dump($dataTruck);
     ?>
 <!DOCTYPE html>
     <html>
