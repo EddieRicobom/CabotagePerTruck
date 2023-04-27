@@ -18,48 +18,62 @@ $listItemOrder['DETERGENTE'] = 890;
 $listItemOrder['LUVA'] = 6000;
 
 
-$dataTruck=processVolPerTruck($truckVolCapacity,$listQtVolDefault,$listItemOrder);
+$dataTruck = processVolPerTruck($truckVolCapacity, $listQtVolDefault, $listItemOrder);
 
 showDataProcessed($dataTruck);
 
-function processVolPerTruck($tVC,$listQtVolDefault,$listItemOrder){
-    $arrayTruck=array();
-    $countFull=0;
-    $countTruck=1;
+function processVolPerTruck($tVC, $listQtVolDefault, $listItemOrder)
+{
+    $arrayTruck = array();
+    $countFull = 0;
+    $countTruck = 1;
+    $nextTruck = 0;
+    $total = 0;
+    $arrayTruck[$countTruck]['empty'] = $tVC;
 
-    foreach ($listItemOrder as $item=>$qtd){
-
-        $truckCapacityPerItem=($tVC/$listQtVolDefault[$item]);
-        $countQtd=0;
-        while($countQtd<$qtd){
-            if(empty($arrayTruck[$countTruck][$item]['qtd'])){
-                $arrayTruck[$countTruck][$item]['qtd']=0;
+    foreach ($listItemOrder as $item => $qtd) {
+        $countQtd = 0;
+        while ($countQtd < $qtd) {
+            if (!isset($arrayTruck[$countTruck][$item]['qtd'])) {
+                $arrayTruck[$countTruck][$item]['qtd'] = 0;
+                $arrayTruck[$countTruck][$item]['total'] = 0;
             };
-            while($countFull<$truckCapacityPerItem && $countQtd<$qtd){
+            if ($total >= $tVC || ($total + $listQtVolDefault[$item]) > $tVC) {
+                $nextTruck = 1;
+            } else {
                 $arrayTruck[$countTruck][$item]['qtd']++;
-                $arrayTruck[$countTruck]['total']+=$listQtVolDefault[$item];
+                $arrayTruck[$countTruck][$item]['total'] += $listQtVolDefault[$item];
+                $arrayTruck[$countTruck]['empty'] -=$listQtVolDefault[$item];
+                $total += $listQtVolDefault[$item];
                 $countFull++;
                 $countQtd++;
             }
-            if($countFull>=$truckCapacityPerItem){
-                $countFull=0;
+            if ($nextTruck) {
+                $nextTruck = 0;
+                $countFull = 0;
                 $countTruck++;
-                $arrayTruck[$countTruck]['total']=0;
+                $total = 0;
+                $arrayTruck[$countTruck]['empty'] = $tVC;
+            } else if ($countQtd == $qtd) {
+                break;
             }
         }
     }
+
     return $arrayTruck;
 }
 
-function showDataProcessed($dataTruck){
+function showDataProcessed($dataTruck)
+{
+    global $truckVolCapacity;
     ?>
-<!DOCTYPE html>
+    <!DOCTYPE html>
     <html>
     <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+        <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
         <link rel="shortcut icon" href="favicon.ico"/>
-        <title><?php echo $titulo; ?> ..:: Listagem Cubagem ::..</title>
-        <body>
+        <title> ..:: Listagem Cubagem ::..</title>
+    <body>
     <p>
         Cenário
         Cliente entrou em contato e solicitou uma melhoria, existe uma tela que faz a listagem de
@@ -68,57 +82,58 @@ function showDataProcessed($dataTruck){
         caminhões, para isso ele vai informar a cubagem necessária (os caminhões possuem o
         mesmo tamanho, 50 m3), o sistema precisa realizar esse cálculo.
     </p>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <td>
-                            ITEM
-                        </td>
-                        <td>
-                            Total de Caixas
-                        </td>
-                        <td>
-                            Cubagem por Caixa (m3)
-                        </td>
-                    </tr>
-                </thead>
-                <tr>
-                    <td>
-                        PAPEL HIGIÊNICO
-                    </td>
-                    <td>
-                        741
-                    </td>
-                    <td>
-                        0,1
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        DETERGENTE
-                    </td>
-                    <td>
-                        890
-                    </td>
-                    <td>
-                        0,025
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        LUVA
-                    </td>
-                    <td>
-                        6000
-                    </td>
-                    <td>
-                        0,0125
-                    </td>
-                </tr>
-            </table>
-<br>
 
-    <table class="table" >
+    <table class="table">
+        <thead>
+        <tr>
+            <td>
+                ITEM
+            </td>
+            <td>
+                Total de Caixas
+            </td>
+            <td>
+                Cubagem por Caixa (m3)
+            </td>
+        </tr>
+        </thead>
+        <tr>
+            <td>
+                PAPEL HIGIÊNICO
+            </td>
+            <td>
+                741
+            </td>
+            <td>
+                0,1
+            </td>
+        </tr>
+        <tr>
+            <td>
+                DETERGENTE
+            </td>
+            <td>
+                890
+            </td>
+            <td>
+                0,025
+            </td>
+        </tr>
+        <tr>
+            <td>
+                LUVA
+            </td>
+            <td>
+                6000
+            </td>
+            <td>
+                0,0125
+            </td>
+        </tr>
+    </table>
+    <br>
+
+    <table class="table">
         <caption>RESULTADO DO PROCESSAMENTO</caption>
         <thead>
         <tr>
@@ -136,23 +151,24 @@ function showDataProcessed($dataTruck){
 
     <?php
 
-foreach ($dataTruck as $truck=>$number){
-    echo "<tr style='border-bottom: cornflowerblue'>
+    foreach ($dataTruck as $truck => $number) {
+        $total=$truckVolCapacity-$number['empty'];
+
+        echo "<tr style='border-bottom: cornflowerblue'>
             <td>
                 {$truck}
             </td>
              <td>";
-    $showItem='';
-    foreach ($number as $item=>$qtd){
-        if($item!='total') {
-            $showItem .= $item . "(" . $qtd['qtd'] . ")<br>";
+        $showItem = '';
+        foreach ($number as $item => $qtd) {
+            if ($item != 'empty') {
+                $showItem .= $item . "(" . $qtd['qtd'] . ")<br>";
+            }
         }
-    }
-    //A CONTAGEM DO SEGUNDO ITEM ESTÁ ERRADA, É CULPA DO LOOP DE CONTAGEM QUE DEVE ESTAR IGNORANDO ALGUMA CONDICIONAL E NÃO ZERANDO/SOMANDO O TOTAL
-    echo $showItem."
+        echo $showItem . "
             </td>
             <td>
-                {$number['total']}
+                {$total} m³
             </td>
             </tr>
             <tr></tr>
@@ -162,13 +178,11 @@ foreach ($dataTruck as $truck=>$number){
             <tr></tr>
             
     ";
-}
-echo "
+    }
+    echo "
     </table>
 </body>
-
-
-EU SEI QUE O SEGUNDO CAMINHÃO ESTÁ EXIBINDO A CUBAGEM TOTAL ERRADA, INFELIZMENTE NÃO HÁ MAIS TEMPO PARA EU CORRIGIR O PROBLEMA
 ";
 
 }
+
